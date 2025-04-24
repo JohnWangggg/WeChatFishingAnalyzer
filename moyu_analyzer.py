@@ -15,7 +15,10 @@ from io import BytesIO
 from matplotlib.patches import Patch
 
 # 重点用户列表（可配置）
-key_users = ["用户A","用户B"]  # 请替换为您想要重点关注的用户昵称
+key_users = []  # 请替换为您想要重点关注的用户昵称
+
+# 需要详细分析topn个用户的消息
+topn_users = 3
 
 # 创建结果目录
 result_dir = "moyu_results"
@@ -209,7 +212,7 @@ moyu_content = []  # 所有摸鱼内容
 
 # 读取CSV文件
 try:
-    with open("v2ex3.csv", "r", encoding="utf-8") as f:
+    with open("bi.csv", "r", encoding="utf-8") as f:
         reader = csv.reader(f)
         header = next(reader, None)  # 假设第一行是表头
         
@@ -653,8 +656,83 @@ html_content += """
         </table>
     </div>
 """
+# 8. 前topn名用户的摸鱼内容分析
 
-# 8. 重点用户的摸鱼内容分析
+print("\n===== 前%s名用户的摸鱼内容分析 =====" % topn_users)
+
+for i, (user, _) in enumerate(top_moyu[:topn_users]):
+    if user in user_messages and len(user_messages[user]) > 0:
+        print(f"\n{user}的摸鱼内容分析:")
+        
+        # 将用户消息合并成一个字符串
+        user_text = " ".join(user_messages[user])
+        
+        # 使用jieba进行分词，并过滤停用词
+        user_word_list = [word for word in jieba.cut(user_text) if word not in stop_words and len(word) > 1]
+        user_word_space = " ".join(user_word_list)
+        
+        # 创建词云对象
+        user_wordcloud = WordCloud(
+            font_path="C:\\Windows\\Fonts\\msyh.ttc",  # 使用微软雅黑字体
+            width=800,
+            height=400,
+            background_color="white",
+            min_font_size=10,
+            max_font_size=150
+        )
+        
+        # 生成词云
+        if user_word_space.strip():  # 确保有内容再生成词云
+            user_wordcloud.generate(user_word_space)
+            
+            # 显示词云图
+            plt.figure(figsize=(10, 5))
+            plt.imshow(user_wordcloud, interpolation="bilinear")
+            plt.axis("off")
+            plt.title(f'{user}的摸鱼内容词云')
+            plt.tight_layout()
+            user_wordcloud_img = fig_to_base64(plt.gcf())
+            plt.savefig(os.path.join(result_dir, f"{user}_wordcloud.png"))
+            plt.close()
+            
+            # 输出词频统计
+            user_word_counts = Counter(user_word_list).most_common(10)
+            print(f"\n{user}摸鱼内容中最常见的10个词：")
+            for word, count in user_word_counts:
+                print(f"{word}: {count}次")
+            
+            # 添加用户摸鱼内容分析到HTML
+            html_content += f"""
+                <div class="section">
+                    <h2>{user}的摸鱼内容分析</h2>
+                    <div class="chart">
+                        <img src="data:image/png;base64,{user_wordcloud_img}" alt="{user}的摸鱼内容词云">
+                    </div>
+                    
+                    <h3>{user}摸鱼内容中最常见的10个词</h3>
+                    <table>
+                        <tr>
+                            <th>词语</th>
+                            <th>出现次数</th>
+                        </tr>
+            """
+            
+            for word, count in user_word_counts:
+                html_content += f"""
+                        <tr>
+                            <td>{word}</td>
+                            <td>{count}</td>
+                        </tr>
+                """
+            
+            html_content += """
+                    </table>
+                </div>
+            """
+        else:
+            print(f"{user}的摸鱼内容不足以生成词云")
+
+# 9. 重点用户的摸鱼内容分析
 print("\n===== 重点用户摸鱼内容分析 =====")
 
 for user in key_users:
