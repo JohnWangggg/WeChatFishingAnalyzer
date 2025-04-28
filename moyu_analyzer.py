@@ -62,8 +62,8 @@ def is_valid_message(msg):
 def is_work_time(timestamp, nickname=None):
     try:
         # 如果是重点用户，也统计非工作时间的消息
-        if nickname in key_users:
-            return True
+        # if nickname in key_users:
+        #     return True
             
         # 转换Unix时间戳为datetime对象
         dt = datetime.datetime.fromtimestamp(int(timestamp))
@@ -212,7 +212,7 @@ moyu_content = []  # 所有摸鱼内容
 
 # 读取CSV文件
 try:
-    with open("bi.csv", "r", encoding="utf-8") as f:
+    with open("bj.csv", "r", encoding="utf-8") as f:
         reader = csv.reader(f)
         header = next(reader, None)  # 假设第一行是表头
         
@@ -659,8 +659,9 @@ html_content += """
 # 8. 前topn名用户的摸鱼内容分析
 
 print("\n===== 前%s名用户的摸鱼内容分析 =====" % topn_users)
-
-for i, (user, _) in enumerate(top_moyu[:topn_users]):
+# 确保detailed_users中没有重复用户
+detailed_users = list(dict.fromkeys(detailed_users))
+for user in detailed_users:
     if user in user_messages and len(user_messages[user]) > 0:
         print(f"\n{user}的摸鱼内容分析:")
         
@@ -736,7 +737,7 @@ for i, (user, _) in enumerate(top_moyu[:topn_users]):
 print("\n===== 重点用户摸鱼内容分析 =====")
 
 for user in key_users:
-    if user in user_messages and len(user_messages[user]) > 0:
+    if user in user_messages and len(user_messages[user]) and user not in detailed_users  > 0:
         print(f"\n{user}的摸鱼内容分析:")
         
         # 将用户消息合并成一个字符串
